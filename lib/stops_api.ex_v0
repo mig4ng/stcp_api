@@ -1,0 +1,103 @@
+defmodule StopsAPI do
+  use Plug.Router
+
+  plug(:match)
+  plug(:dispatch)
+
+  # GET /stops/:paragem
+  get "/stops/:paragem" do
+    case get_stops(paragem) do
+      {:ok, result} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(200, Jason.encode!(result))
+
+      {:error, _reason} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(500, Jason.encode!(%{error: "Failed to fetch stops"}))
+    end
+  end
+
+  match _ do
+    send_resp(conn, 404, "Not found")
+  end
+
+  defp get_stops(paragem) do
+    url =
+      "https://www.stcp.pt/pt/widget/post.php?uid=d72242190a22274321cacf9eadc7ec5f&paragem=#{paragem}"
+
+    case HTTPoison.get(url, [], hackney: [insecure: true]) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        cleaned_html = body |> String.trim() |> String.split() |> Enum.join(" ")
+
+        case parse_stops(cleaned_html) do
+          {:ok, stops_lines} -> {:ok, batch_stops(stops_lines)}
+          error -> error
+        end
+
+      {:ok, %HTTPoison.Response{status_code: status_code}} ->
+        {:error, "HTTP #{status_code}"}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
+  defp parse_stops(html) do
+    try do
+      case Floki.parse_document(html) do
+        {:ok, document} ->
+          stops_lines =
+            document
+            |> Floki.find("div.floatLeft")
+            |> Enum.filter(&has_linha_class?/1)
+            |> Enum.map(&extract_and_format_text/1)
+
+          {:ok, stops_lines}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    rescue
+      e -> {:error, e}
+    end
+  end
+
+  defp has_linha_class?({_tag, attributes, _children}) do
+    case List.keyfind(attributes, "class", 0) do
+      {"class", class_string} -> String.contains?(class_string, "Linha")
+      nil -> false
+    end
+  end
+
+  defp extract_and_format_text(element) do
+    element
+    |> Floki.text()
+    |> format_text()
+  end
+
+  defp format_text(raw_text) do
+    raw_text
+  end
+
+  defp batch_stops(stops_lines) do
+    stops_lines
+    |> Enum.drop(3)
+    |> Enum.chunk_every(3)
+  end
+end
+
+# Application supervisor and startup
+defmodule StopsAPI.Application do
+  use Application
+
+  def start(_type, _args) do
+    children = [
+      {Plug.Cowboy, scheme: :http, plug: StopsAPI, options: [port: 4000]}
+    ]
+
+    opts = [strategy: :one_for_one, name: StopsAPI.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+end
