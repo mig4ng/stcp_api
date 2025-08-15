@@ -1,6 +1,6 @@
 # STCP API - Elixir
 
-A simple Elixir API for retrieving real-time STCP bus arrival times.
+A simple Elixir API for retrieving real-time STCP (main Porto bus company) bus arrival times.
 
 ## About
 
