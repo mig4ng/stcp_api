@@ -19,3 +19,15 @@ This client was created for use in [mig4ng/stcp](https://github.com/mig4ng/stcp)
 ## Installation
 
 Copy and paste it into your app instead of adding another dependency.
+
+## Run locally
+
+Clone this repo, install dependencies with `mix deps.get`.
+
+Run it with `mix run --no-halt`.
+
+It should be available in `http://localhost:4000/stops/{stop}`. E.g. for `MTB1`:
+```sh
+> curl http://localhost:4000/stops/MTB1
+[["205 ","S. ROQUE - P","a passar - "],["205 ","CAMPANHÃ - P","17:44 - 12min"],["205 ","S. ROQUE - P","18:01 - 28min"],["205 ","CAMPANHÃ - P","18:13 - 41min"]]
+```
