@@ -1,4 +1,11 @@
 # STCP API - Elixir
+⚠️ **END OF LIFE AND NOT WORKING.**
+
+**STCP finally updated its website and now it works on mobile. During the process they removed the pages/widget this project was scraping.**
+
+**This project is no longer needed because the new website works great on mobile.**
+
+---
 
 A simple Elixir API for retrieving real-time STCP (main Porto bus company) bus arrival times.
 
